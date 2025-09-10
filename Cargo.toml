@@ -45,7 +45,7 @@ quote = "1.0.40"
 rustc-hash = "2.1.1"
 tokio = { version = "1.47.1", features = ["full"] }
 typedb-driver = { version = "3.4.4", features = ["sync"] }
-typeql = { version = "0.0.0", path = "vendor/typeql/rust" }
+typeql = "3.2.0"
 
 [dev-dependencies]
 syn = "2.0.106"

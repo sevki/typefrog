@@ -91,21 +91,13 @@ entity G sub C;";
     ");
 
     insta::assert_debug_snapshot!(typefrog::compute(input).unwrap(), @r#"
-    Generated {
+    IR {
         structs: [
             Struct {
-                name: "C",
+                name: "E",
                 fields: [
                     Field {
                         name: "fA",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fB",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fC",
                         ty: "string",
                     },
                 ],
@@ -124,56 +116,9 @@ entity G sub C;";
                 ],
             },
             Struct {
-                name: "A",
-                fields: [
-                    Field {
-                        name: "fA",
-                        ty: "string",
-                    },
-                ],
-            },
-            Struct {
-                name: "B",
-                fields: [
-                    Field {
-                        name: "fA",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fB",
-                        ty: "string",
-                    },
-                ],
-            },
-            Struct {
-                name: "D",
-                fields: [
-                    Field {
-                        name: "fC",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fA",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fB",
-                        ty: "string",
-                    },
-                    Field {
-                        name: "fD",
-                        ty: "string",
-                    },
-                ],
-            },
-            Struct {
                 name: "G",
                 fields: [
                     Field {
-                        name: "fC",
-                        ty: "string",
-                    },
-                    Field {
                         name: "fA",
                         ty: "string",
                     },
@@ -181,40 +126,14 @@ entity G sub C;";
                         name: "fB",
                         ty: "string",
                     },
-                ],
-            },
-            Struct {
-                name: "E",
-                fields: [
                     Field {
-                        name: "fA",
+                        name: "fC",
                         ty: "string",
                     },
                 ],
             },
         ],
         traits: [
-            Trait {
-                name: "D",
-                funcs: [
-                    Fn {
-                        name: "fC",
-                        return_type: "string",
-                    },
-                    Fn {
-                        name: "fA",
-                        return_type: "string",
-                    },
-                    Fn {
-                        name: "fB",
-                        return_type: "string",
-                    },
-                    Fn {
-                        name: "fD",
-                        return_type: "string",
-                    },
-                ],
-            },
             Trait {
                 name: "A",
                 funcs: [
@@ -250,6 +169,27 @@ entity G sub C;";
                     },
                     Fn {
                         name: "fC",
+                        return_type: "string",
+                    },
+                ],
+            },
+            Trait {
+                name: "D",
+                funcs: [
+                    Fn {
+                        name: "fA",
+                        return_type: "string",
+                    },
+                    Fn {
+                        name: "fB",
+                        return_type: "string",
+                    },
+                    Fn {
+                        name: "fC",
+                        return_type: "string",
+                    },
+                    Fn {
+                        name: "fD",
                         return_type: "string",
                     },
                 ],

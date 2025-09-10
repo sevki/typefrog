@@ -1,0 +1,18 @@
+# Clippy configuration for typefrog
+# https://doc.rust-lang.org/clippy/configuration.html
+
+# Avoid unnecessary `Box` allocations for very small types
+enum-variant-size-threshold = 256
+
+# Allow some complexity in the codebase given the domain
+cognitive-complexity-threshold = 25
+
+# Set reasonable limits for documentation 
+missing-docs-in-crate-items = true
+doc-valid-idents = ["TypeQL", "TypeDB", "ascent", "datafrog"]
+
+# Type complexity limits
+type-complexity-threshold = 250
+
+# Allow some longer function names for descriptive APIs
+max-fn-params-bools = 3

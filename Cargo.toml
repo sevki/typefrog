@@ -5,6 +5,33 @@ edition = "2021"
 
 [workspace]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+# Clippy configuration
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Enable clippy pedantic lints but allow some exceptions
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Allow some pedantic lints that are too noisy for this codebase
+module_name_repetitions = "allow"
+similar_names = "allow"
+too_many_lines = "allow"
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+
+# Custom lints for better code quality
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "deny"
+unimplemented = "warn"
+
 [dependencies]
 argh = "0.1.13"
 ascent = "0.8.0"
@@ -22,3 +49,4 @@ typeql = { version = "0.0.0", path = "vendor/typeql/rust" }
 
 [dev-dependencies]
 syn = "2.0.106"
+cargo-llvm-cov = "0.6"

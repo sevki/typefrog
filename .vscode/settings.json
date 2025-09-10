@@ -1,0 +1,21 @@
+{
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.allTargets": true,
+    "rust-analyzer.check.extraArgs": [
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+    ],
+    "rust-analyzer.rustfmt.extraArgs": [
+        "+stable"
+    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.rust": "explicit"
+    },
+    "files.associations": {
+        "*.toml": "toml"
+    }
+}

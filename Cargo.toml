@@ -1,0 +1,24 @@
+[package]
+name = "typefrog"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+argh = "0.1.13"
+ascent = "0.8.0"
+convert_case = "0.8.0"
+insta = "1.43.1"
+lazy_static = "1.5.0"
+okstd = "2.0.1"
+prettyplease = "0.2.37"
+proc-macro2 = "1.0.101"
+quote = "1.0.40"
+rustc-hash = "2.1.1"
+tokio = { version = "1.47.1", features = ["full"] }
+typedb-driver = { version = "3.4.4", features = ["sync"] }
+typeql = { version = "0.0.0", path = "vendor/typeql/rust" }
+
+[dev-dependencies]
+syn = "2.0.106"

@@ -1,3 +1,0 @@
-[submodule "vendor/typeql"]
-	path = vendor/typeql
-	url = git@github.com:sevki/typeql.git

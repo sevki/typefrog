@@ -72,26 +72,15 @@ mod tests {
 
         insta::assert_snapshot!(output_str, @r"
         struct L2 {
-            f2: String,
             f0: String,
             f1: String,
+            f2: String,
         }
         struct L3 {
-            f3: String,
-            f2: String,
             f0: String,
             f1: String,
-        }
-        trait A3 {
-            fn f2(&self) -> String;
-            fn f0(&self) -> String;
-            fn f1(&self) -> String;
-            fn f3(&self) -> String;
-        }
-        trait A2 {
-            fn f0(&self) -> String;
-            fn f1(&self) -> String;
-            fn f2(&self) -> String;
+            f2: String,
+            f3: String,
         }
         trait A0 {
             fn f0(&self) -> String;
@@ -99,6 +88,17 @@ mod tests {
         trait A1 {
             fn f0(&self) -> String;
             fn f1(&self) -> String;
+        }
+        trait A2 {
+            fn f0(&self) -> String;
+            fn f1(&self) -> String;
+            fn f2(&self) -> String;
+        }
+        trait A3 {
+            fn f0(&self) -> String;
+            fn f1(&self) -> String;
+            fn f2(&self) -> String;
+            fn f3(&self) -> String;
         }
         ");
     }

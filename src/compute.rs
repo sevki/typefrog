@@ -112,22 +112,29 @@ pub fn compute(input: &str) -> Result<IR, String> {
     }
 
     // Create traits from abstracts
-    let traits: Vec<Trait> = abstract_map
+    let mut traits: Vec<Trait> = abstract_map
         .into_iter()
-        .map(|(name, fields)| Trait {
-            name: name.to_string(),
-            funcs: fields
+        .map(|(name, fields)| {
+            let mut funcs: Vec<Fn> = fields
                 .into_iter()
                 .map(|(field, type_)| Fn {
                     name: field.to_string(),
                     return_type: type_.to_string(),
                 })
-                .collect(),
+                .collect();
+            // Sort funcs by name for deterministic ordering
+            funcs.sort();
+            Trait {
+                name: name.to_string(),
+                funcs,
+            }
         })
         .collect();
+    // Sort traits by name for deterministic ordering
+    traits.sort();
 
     // Create structs from entities (but exclude abstracts that also appear in entities)
-    let structs: Vec<Struct> = entity_map
+    let mut structs: Vec<Struct> = entity_map
         .into_iter()
         .filter_map(|(name, fields)| {
             // this can come in the form of a type_.kind or an annotation on a type.
@@ -138,19 +145,24 @@ pub fn compute(input: &str) -> Result<IR, String> {
             if prog.abstract_.iter().any(|(abs,)| abs == &name) {
                 None
             } else {
+                let mut fields: Vec<Field> = fields
+                    .into_iter()
+                    .map(|(field, type_)| Field {
+                        name: field.to_string(),
+                        ty: type_.to_string(),
+                    })
+                    .collect();
+                // Sort fields by name for deterministic ordering
+                fields.sort();
                 Some(Struct {
                     name: name.to_string(),
-                    fields: fields
-                        .into_iter()
-                        .map(|(field, type_)| Field {
-                            name: field.to_string(),
-                            ty: type_.to_string(),
-                        })
-                        .collect(),
+                    fields,
                 })
             }
         })
         .collect();
+    // Sort structs by name for deterministic ordering
+    structs.sort();
 
     Ok(IR { structs, traits })
 }

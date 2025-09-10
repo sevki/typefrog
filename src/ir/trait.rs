@@ -9,13 +9,13 @@ use {
 
 use crate::cased_ident;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) struct Trait {
     pub(crate) name: String,
     pub(crate) funcs: Vec<Fn>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) struct Fn {
     pub(crate) name: String,
     // pub(crate) args: Vec<String>, // always &self but maybe not?

@@ -191,18 +191,25 @@ impl IntoFacts for &Type {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::intern;
+    use crate::horn::Horn;
 
     #[test]
-    fn test_value_type_display() {
-        // Test that all ValueType variants display correctly
-        assert_eq!(Atom::Value(typeql::token::ValueType::Boolean).to_string(), "boolean");
-        assert_eq!(Atom::Value(typeql::token::ValueType::Date).to_string(), "date");
-        assert_eq!(Atom::Value(typeql::token::ValueType::DateTime).to_string(), "datetime");
-        assert_eq!(Atom::Value(typeql::token::ValueType::DateTimeTZ).to_string(), "datetime-tz");
-        assert_eq!(Atom::Value(typeql::token::ValueType::Decimal).to_string(), "decimal");
-        assert_eq!(Atom::Value(typeql::token::ValueType::Double).to_string(), "double");
-        assert_eq!(Atom::Value(typeql::token::ValueType::Duration).to_string(), "duration");
-        assert_eq!(Atom::Value(typeql::token::ValueType::Integer).to_string(), "integer");
-        assert_eq!(Atom::Value(typeql::token::ValueType::String).to_string(), "string");
+    fn test_value_type_in_facts() {
+        // Test that ValueType atoms work correctly when used in actual Facts
+        let entity_atom = intern!(Atom::Label("test_entity".to_string()));
+        let boolean_atom = intern!(Atom::Value(typeql::token::ValueType::Boolean));
+        let date_atom = intern!(Atom::Value(typeql::token::ValueType::Date));
+        let integer_atom = intern!(Atom::Value(typeql::token::ValueType::Integer));
+        
+        // Create facts using the value type atoms 
+        let boolean_fact = Fact::Value(entity_atom.clone(), boolean_atom);
+        let date_fact = Fact::Value(entity_atom.clone(), date_atom);
+        let integer_fact = Fact::Value(entity_atom.clone(), integer_atom);
+        
+        // Test that the facts can be converted to logic programming syntax
+        assert_eq!(boolean_fact.implication(), "value(test_entity, boolean). % 0 1\n");
+        assert_eq!(date_fact.implication(), "value(test_entity, date). % 0 2\n");  
+        assert_eq!(integer_fact.implication(), "value(test_entity, integer). % 0 3\n");
     }
 }

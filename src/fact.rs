@@ -22,14 +22,14 @@ impl Display for Atom {
         match self {
             Atom::Label(label) => write!(f, "{label}"),
             Atom::Value(value_type) => match value_type {
-                typeql::token::ValueType::Boolean => todo!(),
-                typeql::token::ValueType::Date => todo!(),
+                typeql::token::ValueType::Boolean => write!(f, "boolean"),
+                typeql::token::ValueType::Date => write!(f, "date"),
                 typeql::token::ValueType::DateTime => write!(f, "datetime"),
-                typeql::token::ValueType::DateTimeTZ => todo!(),
-                typeql::token::ValueType::Decimal => todo!(),
-                typeql::token::ValueType::Double => todo!(),
-                typeql::token::ValueType::Duration => todo!(),
-                typeql::token::ValueType::Integer => todo!(),
+                typeql::token::ValueType::DateTimeTZ => write!(f, "datetime-tz"),
+                typeql::token::ValueType::Decimal => write!(f, "decimal"),
+                typeql::token::ValueType::Double => write!(f, "double"),
+                typeql::token::ValueType::Duration => write!(f, "duration"),
+                typeql::token::ValueType::Integer => write!(f, "integer"),
                 typeql::token::ValueType::String => {
                     write!(f, "string")
                 }
@@ -185,5 +185,24 @@ impl IntoFacts for &Type {
             ));
         }
         facts
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_value_type_display() {
+        // Test that all ValueType variants display correctly
+        assert_eq!(Atom::Value(typeql::token::ValueType::Boolean).to_string(), "boolean");
+        assert_eq!(Atom::Value(typeql::token::ValueType::Date).to_string(), "date");
+        assert_eq!(Atom::Value(typeql::token::ValueType::DateTime).to_string(), "datetime");
+        assert_eq!(Atom::Value(typeql::token::ValueType::DateTimeTZ).to_string(), "datetime-tz");
+        assert_eq!(Atom::Value(typeql::token::ValueType::Decimal).to_string(), "decimal");
+        assert_eq!(Atom::Value(typeql::token::ValueType::Double).to_string(), "double");
+        assert_eq!(Atom::Value(typeql::token::ValueType::Duration).to_string(), "duration");
+        assert_eq!(Atom::Value(typeql::token::ValueType::Integer).to_string(), "integer");
+        assert_eq!(Atom::Value(typeql::token::ValueType::String).to_string(), "string");
     }
 }

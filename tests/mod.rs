@@ -1,7 +1,12 @@
 #![cfg(test)]
 
-use typefrog::{fact::IntoFacts, horn::Horn};
-use typeql::query::SchemaQuery;
+use {
+    typefrog::{
+        fact::IntoFacts,
+        horn::{Clause, Prolog},
+    },
+    typeql::query::SchemaQuery,
+};
 
 #[test]
 fn test_identifier_interning() {
@@ -25,29 +30,31 @@ entity E sub A;
 entity F sub B;
 entity G sub C;";
     let results = match typeql::parse_queries(input) {
-        Ok(queries) => queries
-            .iter()
-            .fold(vec![], |mut acc, query| match &query.structure {
-                typeql::query::QueryStructure::Schema(SchemaQuery::Define(define)) => {
-                    for definable in &define.definables {
-                        match definable {
-                            typeql::Definable::TypeDeclaration(type_) => {
-                                acc.push(
-                                    type_
-                                        .into_facts()
-                                        .into_iter()
-                                        .map(|f| f.implication())
-                                        .collect::<Vec<String>>(),
-                                );
+        Ok(queries) => {
+            queries.iter().fold(vec![], |mut acc, query| {
+                match &query.structure {
+                    typeql::query::QueryStructure::Schema(SchemaQuery::Define(define)) => {
+                        for definable in &define.definables {
+                            match definable {
+                                typeql::Definable::TypeDeclaration(type_) => {
+                                    acc.push(
+                                        type_
+                                            .into_facts()
+                                            .into_iter()
+                                            .map(|f| f.implication::<Prolog>())
+                                            .collect::<Vec<String>>(),
+                                    );
+                                }
+                                typeql::Definable::Function(_function) => todo!(),
+                                typeql::Definable::Struct(_) => todo!(),
                             }
-                            typeql::Definable::Function(_function) => todo!(),
-                            typeql::Definable::Struct(_) => todo!(),
                         }
+                        acc
                     }
-                    acc
+                    _ => acc,
                 }
-                _ => acc,
-            }),
+            })
+        }
         Err(e) => {
             panic!("TypeQL parse error: {}", e);
         }

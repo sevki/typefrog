@@ -12,101 +12,140 @@
 //! | Goal clause     | `false ← (p ∧ q ∧ ... ∧ t)` | `:- p, q, ..., t.`   |
 //!
 //! Mostly from <https://en.wikipedia.org/wiki/Horn_clause>
-use crate::fact::Fact;
+use crate::{arity::*, fact::Fact};
 
-/// Dialect of Horn clause.
-pub enum Dialect {
-    /// Prolog dialect.
-    /// ```prolog,ignore
-    /// entity(1).
-    /// relation(1, 2).
-    /// attribute(1, 2).
-    /// ```
-    Prolog,
-    /// Ascent dialect.
-    /// ```rust,ignore
-    /// ascent!{
-    ///     relation relation_(Interned<Atom>);
-    ///     Rules
-    ///     sub(grandparent,grandchild) <-- sub(grandparent,parent), sub(parent,grandchild);
-    /// }
-    /// ```
-    Ascent,
+/// A dialect for Horn clause.
+pub trait Dialect {
+    /// The opening parenthesis character.
+    const OPEN_PAREN: &'static str;
+    /// The closing parenthesis character.
+    const CLOSE_PAREN: &'static str;
+    /// The clause end character.
+    const CLAUSE_END: &'static str;
+    /// The comment character.
+    const COMMENT: &'static str;
+    /// The conjunction character.
+    const CONJ: &'static str; // AND
+    /// The disjunction character.
+    const DISJ: &'static str; // OR
+}
+
+/// Prolog dialect.
+pub struct Prolog;
+
+/// Ascent dialect.
+pub struct Ascent;
+
+impl Dialect for Prolog {
+    const OPEN_PAREN: &'static str = "(";
+    const CLOSE_PAREN: &'static str = ")";
+    const CLAUSE_END: &'static str = ".";
+    const COMMENT: &'static str = "%";
+    const CONJ: &'static str = ","; // AND
+    const DISJ: &'static str = ";"; // OR
+}
+
+impl Dialect for Ascent {
+    const OPEN_PAREN: &'static str = "(";
+    const CLOSE_PAREN: &'static str = ")";
+    const CLAUSE_END: &'static str = ";";
+    const COMMENT: &'static str = "//";
+    const CONJ: &'static str = ","; // AND in ascent
+    /// NOT TRUE
+    const DISJ: &'static str = "||";
 }
 
 /// Horn clause is a logical formula in conjunctive normal form with at most one positive literal.
-pub trait Horn {
+pub trait Clause {
     /// Print a Horn clause in it's implication form.
-    fn implication(&self) -> String;
+    fn implication<D: Dialect>(&self) -> String;
+    /// Print a Horn clause in it's disjunction form.
+    fn disjunction(&self) -> String;
 }
 
-impl Horn for Fact {
-    fn implication(&self) -> String {
-        let clause = match self {
-            Fact::Entity(term) => Self::format_unary("entity", term),
-            Fact::Relation(interned) => Self::format_unary("relation", interned),
-            Fact::Attribute(interned) => Self::format_unary("attribute", interned),
-            Fact::Role(interned) => Self::format_unary("role", interned),
-            Fact::Abstract(interned) => Self::format_unary("abstract", interned),
-            Fact::Cascade(interned) => Self::format_unary("cascade", interned),
-            Fact::Distinct(interned) => Self::format_unary("distinct", interned),
-            Fact::Independent(interned) => Self::format_unary("independent", interned),
-            Fact::Key(interned) => Self::format_unary("key", interned),
-            Fact::Unique(interned) => Self::format_unary("unique", interned),
-            Fact::Value(a, b) => Self::format_binary("value", a, b),
-            Fact::Owns(a, b) => Self::format_binary("owns", a, b),
-            Fact::Relates(a, b) => Self::format_binary("relates", a, b),
-            Fact::Sub(a, b) => Self::format_binary("sub", a, b),
-            Fact::Plays(a, b, c) => Self::format_ternary("plays", a, b, c),
+impl Clause for Fact {
+    fn implication<D: Dialect>(&self) -> String {
+        let (pred, s, comment) = match self {
+            Fact::Entity(a) => (
+                "entity",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Relation(a) => (
+                "rel",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Attribute(a) => (
+                "attribute",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Role(a) => (
+                "role",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Abstract(a) => (
+                "abstract",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Cascade(a) => (
+                "cascade",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Distinct(a) => (
+                "distinct",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Independent(a) => (
+                "independent",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Key(a) => (
+                "key",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Unique(a) => (
+                "unique",
+                format_unary::<D>(a),
+                InternComment::intern_comment(a),
+            ),
+            Fact::Value(value) => (
+                "value",
+                format_binary::<D>(value),
+                InternComment::intern_comment(value),
+            ),
+            Fact::Owns(owns) => (
+                "owns",
+                format_binary::<D>(owns),
+                InternComment::intern_comment(owns),
+            ),
+            Fact::Relates(relates) => (
+                "relates",
+                format_binary::<D>(relates),
+                InternComment::intern_comment(relates),
+            ),
+            Fact::Sub(sub) => (
+                "sub",
+                format_binary::<D>(sub),
+                InternComment::intern_comment(sub),
+            ),
+            Fact::Plays(plays) => (
+                "plays",
+                format_ternary::<D>(plays),
+                InternComment::intern_comment(plays),
+            ),
         };
-        format!("{}\n", clause)
-    }
-}
-
-impl Fact {
-    fn format_unary<T>(predicate: &str, arg: &crate::internment::Interned<T>) -> String
-    where
-        T: std::fmt::Display + Eq + Clone,
-    {
-        format!("{}({}). % {}", predicate, arg, arg.uid())
+        format!("{pred}{s}{} {} {comment}\n", D::CLAUSE_END, D::COMMENT,)
     }
 
-    fn format_binary<T>(
-        predicate: &str,
-        arg1: &crate::internment::Interned<T>,
-        arg2: &crate::internment::Interned<T>,
-    ) -> String
-    where
-        T: std::fmt::Display + Eq + Clone,
-    {
-        format!(
-            "{}({}, {}). % {} {}",
-            predicate,
-            arg1,
-            arg2,
-            arg1.uid(),
-            arg2.uid()
-        )
-    }
-
-    fn format_ternary<T>(
-        predicate: &str,
-        arg1: &crate::internment::Interned<T>,
-        arg2: &crate::internment::Interned<T>,
-        arg3: &crate::internment::Interned<T>,
-    ) -> String
-    where
-        T: std::fmt::Display + Eq + Clone,
-    {
-        format!(
-            "{}({}, {}, {}). % {} {} {}",
-            predicate,
-            arg1,
-            arg2,
-            arg3,
-            arg1.uid(),
-            arg2.uid(),
-            arg3.uid()
-        )
+    fn disjunction(&self) -> String {
+        todo!()
     }
 }

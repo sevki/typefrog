@@ -4,6 +4,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![doc = include_str!("../README.md")]
 
+mod arity;
 mod compute;
 pub mod fact;
 pub mod horn;

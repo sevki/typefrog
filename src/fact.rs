@@ -1,6 +1,7 @@
 //! Facts about a typeql schema.
 use {
     crate::{
+        arity::{Binary, Ternary, Unary},
         intern,
         internment::{Intern, Interned},
     },
@@ -21,19 +22,21 @@ impl Display for Atom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Atom::Label(label) => write!(f, "{label}"),
-            Atom::Value(value_type) => match value_type {
-                typeql::token::ValueType::Boolean => todo!(),
-                typeql::token::ValueType::Date => todo!(),
-                typeql::token::ValueType::DateTime => write!(f, "datetime"),
-                typeql::token::ValueType::DateTimeTZ => todo!(),
-                typeql::token::ValueType::Decimal => todo!(),
-                typeql::token::ValueType::Double => todo!(),
-                typeql::token::ValueType::Duration => todo!(),
-                typeql::token::ValueType::Integer => todo!(),
-                typeql::token::ValueType::String => {
-                    write!(f, "string")
+            Atom::Value(value_type) => {
+                match value_type {
+                    typeql::token::ValueType::Boolean => todo!(),
+                    typeql::token::ValueType::Date => todo!(),
+                    typeql::token::ValueType::DateTime => write!(f, "datetime"),
+                    typeql::token::ValueType::DateTimeTZ => todo!(),
+                    typeql::token::ValueType::Decimal => todo!(),
+                    typeql::token::ValueType::Double => todo!(),
+                    typeql::token::ValueType::Duration => todo!(),
+                    typeql::token::ValueType::Integer => todo!(),
+                    typeql::token::ValueType::String => {
+                        write!(f, "string")
+                    }
                 }
-            },
+            }
         }
     }
 }
@@ -48,41 +51,35 @@ impl From<String> for Atom {
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Fact {
     /// Entity fact.
-    Entity(Interned<Atom>),
+    Entity(Unary),
     /// Relation fact.
-    Relation(Interned<Atom>),
+    Relation(Unary),
     /// Attribute fact.
-    Attribute(Interned<Atom>),
+    Attribute(Unary),
     /// Role fact.
-    Role(Interned<Atom>),
+    Role(Unary),
     /// Abstract fact.
-    Abstract(Interned<Atom>),
+    Abstract(Unary),
     /// Cascade fact.
-    Cascade(Interned<Atom>),
+    Cascade(Unary),
     /// Distinct fact.
-    Distinct(Interned<Atom>),
+    Distinct(Unary),
     /// Independent fact.
-    Independent(Interned<Atom>),
+    Independent(Unary),
     /// Key fact.
-    Key(Interned<Atom>),
+    Key(Unary),
     /// Unique fact.
-    Unique(Interned<Atom>),
+    Unique(Unary),
     /// Value fact.
-    Value(Interned<Atom>, Interned<Atom>),
+    Value(Binary),
     /// Owns fact.
-    Owns(Interned<Atom>, Interned<Atom>),
+    Owns(Binary),
     /// Relates fact.
-    Relates(Interned<Atom>, Interned<Atom>),
+    Relates(Binary),
     /// Sub fact.
-    Sub(Interned<Atom>, Interned<Atom>),
+    Sub(Binary),
     /// Plays fact.
-    Plays(Interned<Atom>, Interned<Atom>, Interned<Atom>),
-}
-
-impl From<Interned<Atom>> for Fact {
-    fn from(label: Interned<Atom>) -> Self {
-        Fact::Entity(label)
-    }
+    Plays(Ternary),
 }
 
 /// IntoFacts is a trait for converting a type into a collection of facts.
@@ -97,10 +94,10 @@ impl IntoFacts for &Type {
 
         let self_label = { intern!(Atom::Label(self.label.ident.to_string())) };
         match &self.kind {
-            Some(Kind::Entity) => facts.push(Fact::Entity(self_label.clone())),
-            Some(Kind::Relation) => facts.push(Fact::Relation(self_label.clone())),
-            Some(Kind::Attribute) => facts.push(Fact::Attribute(self_label.clone())),
-            Some(Kind::Role) => facts.push(Fact::Role(self_label.clone())),
+            Some(Kind::Entity) => facts.push(Fact::Entity((self_label.clone(),))),
+            Some(Kind::Relation) => facts.push(Fact::Relation((self_label.clone(),))),
+            Some(Kind::Attribute) => facts.push(Fact::Attribute((self_label.clone(),))),
+            Some(Kind::Role) => facts.push(Fact::Role((self_label.clone(),))),
             _ => {}
         }
         fn process_annotations(
@@ -110,12 +107,14 @@ impl IntoFacts for &Type {
             let mut facts = Vec::new();
             for annotation in annotations {
                 match annotation {
-                    Annotation::Abstract(_) => facts.push(Fact::Abstract(for_label.clone())),
-                    Annotation::Cascade(_) => facts.push(Fact::Cascade(for_label.clone())),
-                    Annotation::Distinct(_) => facts.push(Fact::Distinct(for_label.clone())),
-                    Annotation::Independent(_) => facts.push(Fact::Independent(for_label.clone())),
-                    Annotation::Key(_) => facts.push(Fact::Key(for_label.clone())),
-                    Annotation::Unique(_) => facts.push(Fact::Unique(for_label.clone())),
+                    Annotation::Abstract(_) => facts.push(Fact::Abstract((for_label.clone(),))),
+                    Annotation::Cascade(_) => facts.push(Fact::Cascade((for_label.clone(),))),
+                    Annotation::Distinct(_) => facts.push(Fact::Distinct((for_label.clone(),))),
+                    Annotation::Independent(_) => {
+                        facts.push(Fact::Independent((for_label.clone(),)))
+                    }
+                    Annotation::Key(_) => facts.push(Fact::Key((for_label.clone(),))),
+                    Annotation::Unique(_) => facts.push(Fact::Unique((for_label.clone(),))),
                     Annotation::Cardinality(_cardinality) => todo!(),
                     Annotation::Range(_range) => todo!(),
                     Annotation::Regex(_regex) => todo!(),
@@ -132,49 +131,55 @@ impl IntoFacts for &Type {
         for cap in &self.capabilities {
             match &cap.base {
                 typeql::schema::definable::type_::CapabilityBase::Sub(sub) => {
-                    let sub_label = { intern!(Atom::Label(sub.supertype_label.ident.to_string())) };
-                    facts.push(Fact::Sub(sub_label, self_label.clone()));
+                    let sub_label = intern!(Atom::Label(sub.supertype_label.ident.to_string()));
+                    facts.push(Fact::Sub((sub_label, self_label.clone())));
                 }
                 typeql::schema::definable::type_::CapabilityBase::Alias(_alias) => todo!(),
-                typeql::schema::definable::type_::CapabilityBase::Owns(owns) => match &owns.owned {
-                    typeql::TypeRefAny::Type(type_ref) => match type_ref {
-                        typeql::TypeRef::Label(label) => {
-                            let owned_label = { intern!(Atom::Label(label.ident.to_string())) };
-                            facts.push(Fact::Owns(self_label.clone(), owned_label))
+                typeql::schema::definable::type_::CapabilityBase::Owns(owns) => {
+                    match &owns.owned {
+                        typeql::TypeRefAny::Type(type_ref) => {
+                            match type_ref {
+                                typeql::TypeRef::Label(label) => {
+                                    let owned_label = intern!(Atom::Label(label.ident.to_string()));
+                                    facts.push(Fact::Owns((self_label.clone(), owned_label)))
+                                }
+                                typeql::TypeRef::Scoped(_scoped_label) => todo!(),
+                                typeql::TypeRef::Variable(_variable) => todo!(),
+                            }
                         }
-                        typeql::TypeRef::Scoped(_scoped_label) => todo!(),
-                        typeql::TypeRef::Variable(_variable) => todo!(),
-                    },
-                    typeql::TypeRefAny::List(_type_ref_list) => todo!(),
-                },
+                        typeql::TypeRefAny::List(_type_ref_list) => todo!(),
+                    }
+                }
                 typeql::schema::definable::type_::CapabilityBase::Plays(plays) => {
-                    let scope_label = { intern!(Atom::Label(plays.role.scope.ident.to_string())) };
-                    let name_label = { intern!(Atom::Label(plays.role.name.ident.to_string())) };
-                    facts.push(Fact::Plays(self_label.clone(), scope_label, name_label))
+                    let scope_label = intern!(Atom::Label(plays.role.scope.ident.to_string()));
+                    let name_label = intern!(Atom::Label(plays.role.name.ident.to_string()));
+                    facts.push(Fact::Plays((self_label.clone(), scope_label, name_label)))
                 }
                 typeql::schema::definable::type_::CapabilityBase::Relates(relates) => {
                     match &relates.related {
-                        typeql::TypeRefAny::Type(type_ref) => match &type_ref {
-                            typeql::TypeRef::Label(label) => {
-                                let related_label =
-                                    { intern!(Atom::Label(label.ident.to_string())) };
-                                facts.push(Fact::Relates(self_label.clone(), related_label))
+                        typeql::TypeRefAny::Type(type_ref) => {
+                            match &type_ref {
+                                typeql::TypeRef::Label(label) => {
+                                    let related_label =
+                                        intern!(Atom::Label(label.ident.to_string()));
+                                    facts.push(Fact::Relates((self_label.clone(), related_label)))
+                                }
+                                typeql::TypeRef::Scoped(_scoped_label) => todo!(),
+                                typeql::TypeRef::Variable(_variable) => todo!(),
                             }
-                            typeql::TypeRef::Scoped(_scoped_label) => todo!(),
-                            typeql::TypeRef::Variable(_variable) => todo!(),
-                        },
+                        }
                         typeql::TypeRefAny::List(_type_ref_list) => todo!(),
                     }
                 }
                 typeql::schema::definable::type_::CapabilityBase::ValueType(value_type) => {
                     match &value_type.value_type {
                         typeql::type_::NamedType::Label(label) => {
-                            let value_label = { intern!(Atom::Label(label.ident.to_string())) };
-                            facts.push(Fact::Value(self_label.clone(), value_label))
+                            let value_label = intern!(Atom::Label(label.ident.to_string()));
+                            facts.push(Fact::Value((self_label.clone(), value_label)))
                         }
                         typeql::type_::NamedType::BuiltinValueType(builtin_value_type) => {
                             let typ_ = intern!(Atom::Value(builtin_value_type.token));
-                            facts.push(Fact::Value(self_label.clone(), typ_));
+                            facts.push(Fact::Value((self_label.clone(), typ_)));
                         }
                     }
                 }

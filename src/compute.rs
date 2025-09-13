@@ -1,35 +1,21 @@
 //! Compute logic for typeql type inheritance
 
-use ascent::ascent;
-use rustc_hash::FxHashMap;
 use {
     crate::{
+        arity::Binary,
         fact::{Atom, Fact, IntoFacts},
         internment::Interned,
         ir::{Field, Fn, Struct, Trait, IR},
     },
+    ascent::ascent,
+    rustc_hash::FxHashMap,
     typeql::query::{QueryStructure::Schema, SchemaQuery},
 };
 
-mod arity {
-    use super::*;
-    pub type Binary = (Interned<Atom>, Interned<Atom>);
-}
+mod prelude;
 
 ascent! {
-    #[allow(non_snake_case)]
-    // Facts prelude
-    // TODO(sevki): use ascent_source!{} macro to split this out.
-    relation owns(Interned<Atom>, Interned<Atom>);
-    relation sub(Interned<Atom>, Interned<Atom>);
-    relation value(Interned<Atom>, Interned<Atom>);
-    relation abs(Interned<Atom>);
-    relation attribute(Interned<Atom>);
-    relation role(Interned<Atom>);
-    relation entity(Interned<Atom>);
-    relation rel(Interned<Atom>);
-    relation abstracts(Interned<Atom>, Interned<Atom>, Interned<Atom>);
-    relation entities(Interned<Atom>, Interned<Atom>, Interned<Atom>);
+    include_source!(prelude::typefrog);
     // Rules
     sub(grandparent,grandchild) <-- sub(grandparent,parent), sub(parent,grandchild);
     owns(owner,owned) <-- sub(grandparent,owner), owns(grandparent,owned), attribute(owned);
@@ -53,38 +39,35 @@ pub fn compute(input: &str) -> Result<IR, String> {
                                 for fact in type_.into_facts() {
                                     match fact {
                                         // these are type declarations, as far as I can tell, an object cannot be both an abstract and a concrete entity
-                                        Fact::Relation(interned) => {
-                                            prog.rel.push((interned,));
+                                        Fact::Relation(rel) => {
+                                            prog.rel.push(rel);
                                         }
-                                        Fact::Attribute(interned) => {
-                                            prog.attribute.push((interned,));
+                                        Fact::Attribute(attr) => {
+                                            prog.attribute.push(attr);
                                         }
-                                        Fact::Role(interned) => {
-                                            prog.role.push((interned,));
+                                        Fact::Role(role) => {
+                                            prog.role.push(role);
                                         }
-                                        Fact::Entity(interned) => {
-                                            prog.entity.push((interned,));
+                                        Fact::Entity(entity) => {
+                                            prog.entity.push(entity);
                                         }
                                         Fact::Abstract(abs) => {
-                                            prog.abs.push((abs,));
+                                            prog.abs.push(abs);
                                         }
-                                        Fact::Value(ident, type_) => {
-                                            prog.value.push((ident, type_))
-                                        }
-
+                                        Fact::Value(value) => prog.value.push(value),
                                         Fact::Cascade(_interned) => todo!(),
                                         Fact::Distinct(_interned) => todo!(),
                                         Fact::Independent(_interned) => todo!(),
                                         Fact::Key(_interned) => todo!(),
                                         Fact::Unique(_interned) => todo!(),
-                                        Fact::Owns(owner, owned) => {
-                                            prog.owns.push((owner, owned));
+                                        Fact::Owns(owns) => {
+                                            prog.owns.push(owns);
                                         }
-                                        Fact::Relates(_a, _b) => {}
-                                        Fact::Sub(parent, child) => {
-                                            prog.sub.push((parent, child));
+                                        Fact::Relates(_relates) => {}
+                                        Fact::Sub(sub) => {
+                                            prog.sub.push(sub);
                                         }
-                                        Fact::Plays(_a, _b, _c) => {}
+                                        Fact::Plays(_plays) => {}
                                     }
                                 }
                             }
@@ -101,13 +84,13 @@ pub fn compute(input: &str) -> Result<IR, String> {
     prog.run();
 
     // Group abstracts by entity name
-    let mut abstract_map: FxHashMap<Interned<Atom>, Vec<arity::Binary>> = FxHashMap::default();
+    let mut abstract_map: FxHashMap<Interned<Atom>, Vec<Binary>> = FxHashMap::default();
     for (entity, field, type_) in prog.abstracts {
         abstract_map.entry(entity).or_default().push((field, type_));
     }
 
     // Group entities by entity name
-    let mut entity_map: FxHashMap<Interned<Atom>, Vec<arity::Binary>> = FxHashMap::default();
+    let mut entity_map: FxHashMap<Interned<Atom>, Vec<Binary>> = FxHashMap::default();
     for (entity, field, type_) in prog.entities {
         entity_map.entry(entity).or_default().push((field, type_));
     }
@@ -118,9 +101,11 @@ pub fn compute(input: &str) -> Result<IR, String> {
         .map(|(name, fields)| {
             let mut funcs: Vec<Fn> = fields
                 .into_iter()
-                .map(|(field, type_)| Fn {
-                    name: field.to_string(),
-                    return_type: type_.to_string(),
+                .map(|(field, type_)| {
+                    Fn {
+                        name: field.to_string(),
+                        return_type: type_.to_string(),
+                    }
                 })
                 .collect();
             funcs.sort_by(|a, b| a.name.cmp(&b.name));
@@ -146,9 +131,11 @@ pub fn compute(input: &str) -> Result<IR, String> {
             } else {
                 let mut sorted_fields: Vec<Field> = fields
                     .into_iter()
-                    .map(|(field, type_)| Field {
-                        name: field.to_string(),
-                        ty: type_.to_string(),
+                    .map(|(field, type_)| {
+                        Field {
+                            name: field.to_string(),
+                            ty: type_.to_string(),
+                        }
                     })
                     .collect();
                 sorted_fields.sort_by(|a, b| a.name.cmp(&b.name));

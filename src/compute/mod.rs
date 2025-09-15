@@ -5,7 +5,8 @@ use {
         arity::Binary,
         fact::{Atom, Fact, IntoFacts},
         internment::Interned,
-        ir::{Field, Fn, Struct, Trait, IR},
+        ir::{Field, Fn, Relation, Struct, Trait, IR},
+        Result,
     },
     ascent::ascent,
     rustc_hash::FxHashMap,
@@ -21,10 +22,11 @@ ascent! {
     owns(owner,owned) <-- sub(grandparent,owner), owns(grandparent,owned), attribute(owned);
     abstracts(name,field,type_) <-- abs(name), owns(name,field), attribute(field), value(field,type_);
     entities(name,field,type_) <-- entity(name), owns(name,field), attribute(field), value(field,type_);
+    players(entity,scope,plays) <-- role(role), plays(entity, scope, plays);
 }
 
 /// Compute TypeQL queries.
-pub fn compute(input: &str) -> Result<IR, String> {
+pub fn compute(input: &str) -> Result<IR> {
     let mut prog = AscentProgram {
         ..Default::default()
     };
@@ -38,47 +40,36 @@ pub fn compute(input: &str) -> Result<IR, String> {
                             typeql::Definable::TypeDeclaration(type_) => {
                                 for fact in type_.into_facts() {
                                     match fact {
-                                        // these are type declarations, as far as I can tell, an object cannot be both an abstract and a concrete entity
-                                        Fact::Relation(rel) => {
-                                            prog.rel.push(rel);
-                                        }
-                                        Fact::Attribute(attr) => {
-                                            prog.attribute.push(attr);
-                                        }
-                                        Fact::Role(role) => {
-                                            prog.role.push(role);
-                                        }
-                                        Fact::Entity(entity) => {
-                                            prog.entity.push(entity);
-                                        }
-                                        Fact::Abstract(abs) => {
-                                            prog.abs.push(abs);
-                                        }
+                                        Fact::Relation(val) => prog.rel.push(val),
+                                        Fact::Attribute(val) => prog.attribute.push(val),
+                                        Fact::Role(val) => prog.role.push(val),
+                                        Fact::Entity(val) => prog.entity.push(val),
+                                        Fact::Abstract(val) => prog.abs.push(val),
                                         Fact::Value(value) => prog.value.push(value),
-                                        Fact::Cascade(_interned) => todo!(),
-                                        Fact::Distinct(_interned) => todo!(),
-                                        Fact::Independent(_interned) => todo!(),
-                                        Fact::Key(_interned) => todo!(),
-                                        Fact::Unique(_interned) => todo!(),
-                                        Fact::Owns(owns) => {
-                                            prog.owns.push(owns);
-                                        }
-                                        Fact::Relates(_relates) => {}
-                                        Fact::Sub(sub) => {
-                                            prog.sub.push(sub);
-                                        }
-                                        Fact::Plays(_plays) => {}
+                                        Fact::Owns(owns) => prog.owns.push(owns),
+                                        Fact::Relates(relates) => prog.relates.push(relates),
+                                        Fact::Regex(regex) => prog.regex.push(regex),
+                                        Fact::Sub(sub) => prog.sub.push(sub),
+                                        Fact::Plays(plays) => prog.plays.push(plays),
+                                        Fact::CardExact(fact) => prog.cardinality_exact.push(fact),
+                                        Fact::CardRange(fact) => prog.cardinality_range.push(fact),
+                                        // db side constraints
+                                        Fact::Cascade(_interned) => {}
+                                        Fact::Distinct(_interned) => {}
+                                        Fact::Independent(_interned) => {}
+                                        Fact::Key(_interned) => {}
+                                        Fact::Unique(_interned) => {}
                                     }
                                 }
                             }
-                            typeql::Definable::Function(_function) => todo!(),
+                            typeql::Definable::Function(_function) => {}
                             typeql::Definable::Struct(_) => todo!(),
                         }
                     }
                 }
             });
         }
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(e.into()),
     }
 
     prog.run();
@@ -101,11 +92,9 @@ pub fn compute(input: &str) -> Result<IR, String> {
         .map(|(name, fields)| {
             let mut funcs: Vec<Fn> = fields
                 .into_iter()
-                .map(|(field, type_)| {
-                    Fn {
-                        name: field.to_string(),
-                        return_type: type_.to_string(),
-                    }
+                .map(|(field, type_)| Fn {
+                    name: field.to_string(),
+                    return_type: type_.to_string(),
                 })
                 .collect();
             funcs.sort_by(|a, b| a.name.cmp(&b.name));
@@ -131,22 +120,43 @@ pub fn compute(input: &str) -> Result<IR, String> {
             } else {
                 let mut sorted_fields: Vec<Field> = fields
                     .into_iter()
-                    .map(|(field, type_)| {
-                        Field {
-                            name: field.to_string(),
-                            ty: type_.to_string(),
-                        }
+                    .map(|(field, type_)| Field {
+                        name: field.to_string(),
+                        ty: type_.to_string(),
                     })
                     .collect();
                 sorted_fields.sort_by(|a, b| a.name.cmp(&b.name));
+                let mut impls = vec![];
+                for (parent, child) in &prog.sub {
+                    if child.uid() == name.uid() {
+                        for trait_ in &traits {
+                            if trait_.name == parent.to_string() {
+                                impls.push(trait_.clone());
+                            }
+                        }
+                    }
+                }
                 Some(Struct {
                     name: name.to_string(),
                     fields: sorted_fields,
+                    impls,
                 })
             }
         })
         .collect();
     structs.sort_by(|a, b| a.name.cmp(&b.name));
 
-    Ok(IR { structs, traits })
+    let relations = prog
+        .role
+        .iter()
+        .map(|a| Relation {
+            name: a.0.to_string(),
+        })
+        .collect::<Vec<_>>();
+
+    Ok(IR {
+        structs,
+        traits,
+        relations,
+    })
 }

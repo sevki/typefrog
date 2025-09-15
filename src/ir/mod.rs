@@ -1,7 +1,8 @@
 use quote::ToTokens;
 
-pub(crate) use crate::ir::{r#struct::*, r#trait::*};
+pub(crate) use crate::ir::{r#struct::*, r#trait::*, relation::*};
 
+mod relation;
 mod r#struct;
 mod r#trait;
 
@@ -17,11 +18,13 @@ macro_rules! cased_ident {
 pub struct IR {
     pub(crate) structs: Vec<Struct>,
     pub(crate) traits: Vec<Trait>,
+    pub(crate) relations: Vec<Relation>,
 }
 
 impl ToTokens for IR {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         self.structs.iter().for_each(|s| s.to_tokens(tokens));
         self.traits.iter().for_each(|t| t.to_tokens(tokens));
+        self.relations.iter().for_each(|r| r.to_tokens(tokens));
     }
 }

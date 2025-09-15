@@ -4,8 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
+members = ["typeql-macros"]
+
+[features]
+default = ["build"]
+build = ["dep:cargo_metadata"]
 
 [dependencies]
+anyhow = "1.0.99"
 argh = "0.1.13"
 ascent = "0.8.0"
 convert_case = "0.8.0"
@@ -16,9 +22,17 @@ prettyplease = "0.2.37"
 proc-macro2 = "1.0.101"
 quote = "1.0.40"
 rustc-hash = "2.1.1"
+thiserror = "2.0.16"
 tokio = { version = "1.47.1", features = ["full"] }
 typedb-driver = { version = "3.4.4", features = ["sync"] }
-typeql = "3.2.0"
+typeql = { git = "https://github.com/sevki/typeql.git", version = "0.0.0" }
+cargo_metadata = { version = "0.22.0", optional = true }
+serde_json = "1.0.143"
+serde = { version = "1.0.219", features = ["derive"] }
+syn = "2.0.106"
+url = "2.5.7"
+toml = "0.9.5"
+
 
 [dev-dependencies]
 syn = "2.0.106"

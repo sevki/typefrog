@@ -141,6 +141,21 @@ impl Clause for Fact {
                 format_ternary::<D>(plays),
                 InternComment::intern_comment(plays),
             ),
+            Fact::CardExact(exact) => (
+                "cardinality_exact",
+                format_binary::<D>(exact),
+                InternComment::intern_comment(exact),
+            ),
+            Fact::CardRange(range) => (
+                "cardinality_range",
+                format_ternary::<D>(range),
+                InternComment::intern_comment(range),
+            ),
+            Fact::Regex(regex) => (
+                "regex",
+                format_binary::<D>(regex),
+                InternComment::intern_comment(regex),
+            ),
         };
         format!("{pred}{s}{} {} {comment}\n", D::CLAUSE_END, D::COMMENT,)
     }

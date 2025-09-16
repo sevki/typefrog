@@ -5,9 +5,15 @@
 #![doc = include_str!("../README.md")]
 
 mod arity;
+#[cfg(feature = "build")]
+pub mod build;
 mod compute;
+pub mod error;
 pub mod fact;
 pub mod horn;
 mod internment;
 mod ir;
 pub use compute::compute;
+
+type Error = error::TypefrogError;
+type Result<T> = std::result::Result<T, Error>;

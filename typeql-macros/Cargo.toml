@@ -1,0 +1,22 @@
+[package]
+name = "typeql-macros"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+
+prettyplease = "0.2.37"
+proc-macro2 = { version = "1.0.101", features = ["span-locations"] }
+quote = "1.0.40"
+snailquote = "0.3.1"
+syn = { version = "2.0.106", features = ["visit"] }
+typeql = { git = "https://github.com/sevki/typeql.git", version = "0.0.0" }
+unescape = "0.1.0"
+unescaper = "0.1.6"
+
+[dev-dependencies]
+insta = "1.43.2"
+trybuild = "1.0.111"

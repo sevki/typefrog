@@ -1,6 +1,6 @@
 use {
     convert_case::{
-        Case::{Flat, Pascal},
+        Case::{Pascal, Snake},
         Casing,
     },
     proc_macro2::TokenStream,
@@ -9,13 +9,13 @@ use {
 
 use crate::cased_ident;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) struct Trait {
     pub(crate) name: String,
     pub(crate) funcs: Vec<Fn>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) struct Fn {
     pub(crate) name: String,
     // pub(crate) args: Vec<String>, // always &self but maybe not?
@@ -24,8 +24,8 @@ pub(crate) struct Fn {
 
 impl ToTokens for Fn {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let name = cased_ident!(self.name, Flat);
-        let return_type = cased_ident!(self.return_type, Pascal);
+        let name = cased_ident!(self.name, Snake);
+        let return_type = format_ident!("{}", self.return_type);
 
         tokens.extend(quote! {
             fn #name(&self) -> #return_type;

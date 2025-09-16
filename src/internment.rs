@@ -164,6 +164,6 @@ macro_rules! intern {
             .get_or_init(
                 || $crate::internment::RwLock::new($crate::internment::Interner::default()),
             )
-            .intern($t)
+            .intern($t.into())
     };
 }

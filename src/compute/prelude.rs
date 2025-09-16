@@ -13,4 +13,10 @@ ascent::ascent_source! {
     relation rel(Interned<Atom>);
     relation abstracts(Interned<Atom>, Interned<Atom>, Interned<Atom>);
     relation entities(Interned<Atom>, Interned<Atom>, Interned<Atom>);
+    relation relates(Interned<Atom>, Interned<Atom>);
+    relation plays(Interned<Atom>, Interned<Atom>, Interned<Atom>);
+    relation players(Interned<Atom>, Interned<Atom>, Interned<Atom>);
+    relation cardinality_exact(Interned<Atom>, Interned<Atom>);
+    relation cardinality_range(Interned<Atom>, Interned<Atom>, Interned<Atom>);
+    relation regex(Interned<Atom>, Interned<Atom>);
 }

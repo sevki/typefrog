@@ -1,7 +1,10 @@
 use {
-    crate::cased_ident,
+    crate::{
+        cased_ident,
+        ir::{r#trait::Fn, Trait},
+    },
     convert_case::{
-        Case::{Flat, Pascal},
+        Case::{Pascal, Snake},
         Casing,
     },
     proc_macro2::TokenStream,
@@ -12,6 +15,7 @@ use {
 pub(crate) struct Struct {
     pub(crate) name: String,
     pub(crate) fields: Vec<Field>,
+    pub(crate) impls: Vec<Trait>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -22,10 +26,49 @@ pub(crate) struct Field {
 
 impl ToTokens for Field {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ty = cased_ident!(self.ty, Pascal);
-        let name = cased_ident!(self.name, Flat);
+        let ty = format_ident!("{}", self.ty);
+        let name = cased_ident!(self.name, Snake);
         tokens.extend(quote! {
             #name: #ty
+        });
+    }
+}
+
+struct For {
+    name: String,
+    trait_: Trait,
+}
+
+struct FnImpl {
+    fn_: Fn,
+}
+
+impl ToTokens for FnImpl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let name = cased_ident!(self.fn_.name, Snake);
+        let ty = format_ident!("{}", self.fn_.return_type);
+        tokens.extend(quote! {
+            fn #name(&self) -> &#ty {
+                &self.#name
+            }
+        });
+    }
+}
+
+impl ToTokens for For {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let name = cased_ident!(self.name, Pascal);
+        let trait_name = cased_ident!(self.trait_.name, Pascal);
+        let fn_impls = self
+            .trait_
+            .funcs
+            .iter()
+            .map(|a| FnImpl { fn_: a.clone() })
+            .collect::<Vec<_>>();
+        tokens.extend(quote! {
+            impl #trait_name for #name {
+                #(#fn_impls)*
+            }
         });
     }
 }
@@ -34,10 +77,19 @@ impl ToTokens for Struct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = cased_ident!(self.name, Pascal);
         let fields = self.fields.clone();
+        let impls = self
+            .impls
+            .iter()
+            .map(|n| For {
+                name: self.name.clone(),
+                trait_: n.clone(),
+            })
+            .collect::<Vec<_>>();
         tokens.extend(quote! {
             struct #name {
                 #(#fields),*
             }
+            #(#impls)*
         });
     }
 }
@@ -72,33 +124,95 @@ mod tests {
 
         insta::assert_snapshot!(output_str, @r"
         struct L2 {
-            f0: String,
-            f1: String,
-            f2: String,
+            f_0: String,
+            f_1: String,
+            f_2: String,
+        }
+        impl A2 for L2 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
+            fn f_1(&self) -> &String {
+                &self.f_1
+            }
+            fn f_2(&self) -> &String {
+                &self.f_2
+            }
+        }
+        impl A1 for L2 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
+            fn f_1(&self) -> &String {
+                &self.f_1
+            }
+        }
+        impl A0 for L2 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
         }
         struct L3 {
-            f0: String,
-            f1: String,
-            f2: String,
-            f3: String,
+            f_0: String,
+            f_1: String,
+            f_2: String,
+            f_3: String,
+        }
+        impl A3 for L3 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
+            fn f_1(&self) -> &String {
+                &self.f_1
+            }
+            fn f_2(&self) -> &String {
+                &self.f_2
+            }
+            fn f_3(&self) -> &String {
+                &self.f_3
+            }
+        }
+        impl A2 for L3 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
+            fn f_1(&self) -> &String {
+                &self.f_1
+            }
+            fn f_2(&self) -> &String {
+                &self.f_2
+            }
+        }
+        impl A1 for L3 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
+            fn f_1(&self) -> &String {
+                &self.f_1
+            }
+        }
+        impl A0 for L3 {
+            fn f_0(&self) -> &String {
+                &self.f_0
+            }
         }
         trait A0 {
-            fn f0(&self) -> String;
+            fn f_0(&self) -> String;
         }
         trait A1 {
-            fn f0(&self) -> String;
-            fn f1(&self) -> String;
+            fn f_0(&self) -> String;
+            fn f_1(&self) -> String;
         }
         trait A2 {
-            fn f0(&self) -> String;
-            fn f1(&self) -> String;
-            fn f2(&self) -> String;
+            fn f_0(&self) -> String;
+            fn f_1(&self) -> String;
+            fn f_2(&self) -> String;
         }
         trait A3 {
-            fn f0(&self) -> String;
-            fn f1(&self) -> String;
-            fn f2(&self) -> String;
-            fn f3(&self) -> String;
+            fn f_0(&self) -> String;
+            fn f_1(&self) -> String;
+            fn f_2(&self) -> String;
+            fn f_3(&self) -> String;
         }
         ");
     }
